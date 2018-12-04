@@ -1,0 +1,15 @@
+In one tab execute the command:
+roslaunch rotors_gazebo mav.launch
+
+In another tab run the command:
+roslaunch mav_linear_mpc mav_linear_mpc_sim.launch
+
+In the next tab run the following command:
+rosrun rviz rviz
+
+Inside rviz,do the following:
+1. In the left part of the rviz window, change map field to world.
+2. Then add the topic TF under the tab display type.
+
+The in another tab, launch the node with the command:
+roslaunch mav_trajectory_generation_ros my_node.launch
