@@ -35,4 +35,6 @@ rostopic pub /firefly/command/pose geometry_msgs/PoseStamped "header:
        y: 0.0
        z: 0.0
        w: 0.0"
+       
+Take care to first send the drone to higher ground through above command else launching node will not produce any results.
  
