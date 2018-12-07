@@ -14,7 +14,7 @@
 #include <mav_trajectory_generation_ros/ros_conversions.h>
 #include <math.h>
 #include "trajectory_msgs/MultiDOFJointTrajectory.h"
-float x_, y_,z_,x1_,y1_,z1_,t=0;
+float x_, y_,z_,x1_,y1_,z1_,husky_x,husky_y,husky_z,t=0;
 void p_get(const trajectory_msgs::MultiDOFJointTrajectory& qd)
 {
   if(qd.points.size()>0)
@@ -33,6 +33,12 @@ void q_get(const geometry_msgs::Pose& q)
   z1_=q.position.z;
   std::cout<<z1_<<std::endl;
 }
+void get_pos(const nav_msgs::Odometry& husky_p)
+{
+  husky_x=husky_p.pose.pose.position.x;
+  husky_y=husky_p.pose.pose.position.y;
+  husky_z=husky_p.pose.pose.position.z;
+}
 int main(int argc,char** argv)
 {
 
@@ -41,11 +47,12 @@ int main(int argc,char** argv)
     ros::Publisher traj_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 10);
     ros::Publisher polynomial_trajectory_pub_ = nh.advertise<mav_planning_msgs::PolynomialTrajectory4D>("path_segments", 1);
     // ros::Publisher position_pub = nh.advertise<geometry_msgs::Vector>("/firefly/command/current_reference", 10);
-    ros::Rate sleep_Rate(0.69);
+    ros::Rate sleep_Rate(1);
     ros::init(argc, argv, "my_node");
     ros::NodeHandle nodeHandle;
-    ros::Subscriber subscriber = nodeHandle.subscribe("/firefly/command/current_reference",10,p_get);
-    ros::Subscriber sub = nodeHandle.subscribe("/firefly/ground_truth/pose",10,q_get);
+    ros::Subscriber subscriber = nodeHandle.subscribe("command/current_reference",10,p_get);
+    ros::Subscriber sub = nodeHandle.subscribe("ground_truth/pose",10,q_get);
+    ros::Subscriber subscrbe = nodeHandle.subscribe("/odometry/filtered",10,get_pos);
     while(ros::ok())
     {
 
@@ -61,10 +68,10 @@ int main(int argc,char** argv)
         // middle.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(3,3,1));
         // vertices.push_back(middle);
 
-        middle.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(5*sin(t),5*cos(t),0.5));
+        middle.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(husky_x,husky_y,0.4));
         vertices.push_back(middle);
 
-        end.makeStartOrEnd(Eigen::Vector3d(5*sin(t),5*cos(t),0), derivative_to_optimize);
+        end.makeStartOrEnd(Eigen::Vector3d(husky_x,husky_y,0.25), derivative_to_optimize);
         vertices.push_back(end);
 
         std::vector<double> segment_times;
@@ -115,9 +122,8 @@ int main(int argc,char** argv)
         vertices.clear();
         sleep_Rate.sleep();
         ros::spinOnce();
-        if(z1_<0.3)
+        if(z1_<0.33&&((husky_x-x_)<0.01)&& ((husky_y-y_)<0.01))
           break;
-        t=t+0.1;
     }
     return 0;
 }
